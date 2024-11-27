@@ -1,12 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 void main() async {
+  print("START 1");
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+
+  print("START 2");
+  final _db = FirebaseFirestore.instance;
+  final event = await _db.collection('bewatering').doc('commands').get();
+  Map<String, dynamic>? data = event.data();
+  if (data != null) {
+    // Print alle keys
+    data.keys.forEach((key) {
+      print("Key: $key");
+    });
+  } else {
+    print("Data is null");
+  }
+  print("START 3");
+
   runApp(const MyApp());
 }
 
