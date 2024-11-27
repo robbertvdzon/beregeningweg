@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:uuid/uuid.dart';
+
+String myData = "Test";
 
 void main() async {
   print("START 1");
@@ -19,6 +22,7 @@ void main() async {
     // Print alle keys
     data.keys.forEach((key) {
       print("Key: $key");
+      myData = myData + key;
     });
   } else {
     print("Data is null");
@@ -79,7 +83,20 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+  String _counter = "a";
+
+  Future<void> saveData(String data) async {
+    final _db = FirebaseFirestore.instance;
+    var uuid = Uuid();
+    String randomUuid = uuid.v4();
+    final jsonKeyValue = <String, String>{randomUuid: data};
+    return _db
+        .collection('bewatering')
+        .doc('commands')
+        .set(jsonKeyValue)
+        .onError((e, _) => print("Error writing document: $e"));
+        // .then((data) => cachedIngredients = ingredients);
+  }
 
   void _incrementCounter() {
     setState(() {
@@ -88,7 +105,9 @@ class _MyHomePageState extends State<MyHomePage> {
       // so that the display can reflect the updated values. If we changed
       // _counter without calling setState(), then the build method would not be
       // called again, and so nothing would appear to happen.
-      _counter++;
+      _counter = _counter+myData;
+      _counter = _counter+"A";
+      saveData("2");
     });
   }
 
