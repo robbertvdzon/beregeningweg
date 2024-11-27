@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:uuid/uuid.dart';
 
 String myData = "Test";
+var _uuid = Uuid();
 
 void main() async {
   print("START 1");
@@ -87,15 +88,13 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future<void> saveData(String data) async {
     final _db = FirebaseFirestore.instance;
-    var uuid = Uuid();
-    String randomUuid = uuid.v4();
+    String randomUuid = _uuid.v4();
     final jsonKeyValue = <String, String>{randomUuid: data};
     return _db
         .collection('bewatering')
         .doc('commands')
-        .set(jsonKeyValue)
+        .set(jsonKeyValue, SetOptions(merge: true))
         .onError((e, _) => print("Error writing document: $e"));
-        // .then((data) => cachedIngredients = ingredients);
   }
 
   void _incrementCounter() {
@@ -105,9 +104,22 @@ class _MyHomePageState extends State<MyHomePage> {
       // so that the display can reflect the updated values. If we changed
       // _counter without calling setState(), then the build method would not be
       // called again, and so nothing would appear to happen.
-      _counter = _counter+myData;
-      _counter = _counter+"A";
+      // _counter = _counter+myData;
+      _counter = _counter+"+";
       saveData("2");
+    });
+  }
+
+  void _decrementCounter() {
+    setState(() {
+      // This call to setState tells the Flutter framework that something has
+      // changed in this State, which causes it to rerun the build method below
+      // so that the display can reflect the updated values. If we changed
+      // _counter without calling setState(), then the build method would not be
+      // called again, and so nothing would appear to happen.
+      // _counter = _counter+myData;
+      _counter = _counter+"-";
+      saveData("-2");
     });
   }
 
@@ -155,9 +167,20 @@ class _MyHomePageState extends State<MyHomePage> {
               '$_counter',
               style: Theme.of(context).textTheme.headlineMedium,
             ),
+            FloatingActionButton(
+              onPressed: _decrementCounter,
+              tooltip: 'Decrement',
+              child: const Icon(Icons.mic),
+            ),
+            FloatingActionButton(
+              onPressed: _incrementCounter,
+              tooltip: 'Increment',
+              child: const Icon(Icons.add),
+            ),
           ],
         ),
       ),
+       // This trailing comma makes auto-formatting nicer for build methods.
       floatingActionButton: FloatingActionButton(
         onPressed: _incrementCounter,
         tooltip: 'Increment',
