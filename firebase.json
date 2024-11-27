@@ -1,1 +1,31 @@
-{"flutter":{"platforms":{"macos":{"default":{"projectId":"tuinbewatering","appId":"1:1083192167302:ios:0f73078ac2f323943d3a07","uploadDebugSymbols":false,"fileOutput":"macos/Runner/GoogleService-Info.plist"}},"dart":{"lib/firebase_options.dart":{"projectId":"tuinbewatering","configurations":{"macos":"1:1083192167302:ios:0f73078ac2f323943d3a07","web":"1:1083192167302:web:327240bf6852bd473d3a07"}}}}}}
+{
+  "flutter": {
+    "platforms": {
+      "macos": {
+        "default": {
+          "projectId": "tuinbewatering",
+          "appId": "1:1083192167302:ios:0f73078ac2f323943d3a07",
+          "uploadDebugSymbols": false,
+          "fileOutput": "macos/Runner/GoogleService-Info.plist"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "tuinbewatering",
+          "configurations": {
+            "macos": "1:1083192167302:ios:0f73078ac2f323943d3a07",
+            "web": "1:1083192167302:web:327240bf6852bd473d3a07"
+          }
+        }
+      }
+    }
+  },
+  "hosting": {
+    "public": "public",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ]
+  }
+}
