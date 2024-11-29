@@ -3,64 +3,59 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:uuid/uuid.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 String myData = "Test";
 var _uuid = Uuid();
 
 void main() async {
-  print("START 1");
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-
-
-  print("START 2");
-  final _db = FirebaseFirestore.instance;
-  final event = await _db.collection('bewatering').doc('commands').get();
-  Map<String, dynamic>? data = event.data();
-  if (data != null) {
-    // Print alle keys
-    data.keys.forEach((key) {
-      print("Key: $key");
-      myData = myData + key;
-    });
-  } else {
-    print("Data is null");
-  }
-  print("START 3");
-
+  // final _db = FirebaseFirestore.instance;
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
+
+
+
     return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const MyHomePage(title: 'Robbert''s tuinsproeiers'),
+      // home: const MyHomePage(title: 'Robbert''s tuinsproeiers'),
+      home: AuthStateChecker(),
+    );
+  }
+}
+
+
+class AuthStateChecker extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          // Toon een laadscherm terwijl de status wordt gecontroleerd
+          return Center(child: CircularProgressIndicator());
+        } else if (snapshot.hasData) {
+          // Gebruiker is ingelogd, ga naar MyHomePage
+          return MyHomePage(title: 'Robbert\'s tuinsproeiers');
+        } else {
+          // Gebruiker is niet ingelogd, ga naar LoginPage
+          return LoginPage();
+        }
+      },
     );
   }
 }
@@ -159,3 +154,72 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 }
+
+//---------
+class LoginPage extends StatefulWidget {
+  @override
+  _LoginPageState createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  String _errorMessage = '';
+
+  Future<void> _login() async {
+    try {
+      // Login met Firebase
+      UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
+      // Als login succesvol is, ga naar de volgende pagina
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => MyHomePage(title: 'Robbert''s tuinsproeiers')),
+      );
+    } catch (e) {
+      // Toon foutbericht
+      setState(() {
+        _errorMessage = e.toString();
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Login'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            TextField(
+              controller: _emailController,
+              decoration: InputDecoration(labelText: 'E-mail'),
+            ),
+            TextField(
+              controller: _passwordController,
+              decoration: InputDecoration(labelText: 'Wachtwoord'),
+              obscureText: true,
+            ),
+            SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: _login,
+              child: Text('Login'),
+            ),
+            if (_errorMessage.isNotEmpty)
+              Text(
+                _errorMessage,
+                style: TextStyle(color: Colors.red),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+//--------
