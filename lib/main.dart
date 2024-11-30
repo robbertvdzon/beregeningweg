@@ -207,13 +207,11 @@ class _LoginPageState extends State<LoginPage> {
             TextField(
               controller: _emailController,
               decoration: InputDecoration(
-                labelText: 'E-mail',
+                labelText: 'Gebruikersnaam',
                 border: OutlineInputBorder(),
               ),
               keyboardType: TextInputType.emailAddress,
-              autofillHints: [AutofillHints.email], // Zorg ervoor dat dit wordt herkend
-              // controller: _emailController,
-              // decoration: InputDecoration(labelText: 'Username'),
+              autofillHints: [AutofillHints.username], // Zorg ervoor dat dit wordt herkend
             ),
             TextField(
               controller: _passwordController,
@@ -223,10 +221,6 @@ class _LoginPageState extends State<LoginPage> {
               ),
               obscureText: true, // Maakt tekst verborgen
               autofillHints: [AutofillHints.password], // Zorg ervoor dat wachtwoord wordt herkend
-              //
-              // controller: _passwordController,
-              // decoration: InputDecoration(labelText: 'Wachtwoord'),
-              // obscureText: true,
             ),
             SizedBox(height: 10),
             ElevatedButton(
