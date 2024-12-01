@@ -201,38 +201,44 @@ class _LoginPageState extends State<LoginPage> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            TextField(
-              controller: _emailController,
-              decoration: InputDecoration(
-                labelText: 'Gebruikersnaam',
-                border: OutlineInputBorder(),
+        child: Form(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              TextField(
+                controller: _emailController,
+                decoration: InputDecoration(
+                  labelText: 'Gebruikersnaam',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.emailAddress,
+                autofillHints: [AutofillHints.username], // Autofill voor gebruikersnaam
               ),
-              keyboardType: TextInputType.emailAddress,
-              autofillHints: [AutofillHints.username], // Zorg ervoor dat dit wordt herkend
-            ),
-            TextField(
-              controller: _passwordController,
-              decoration: InputDecoration(
-                labelText: 'Wachtwoord',
-                border: OutlineInputBorder(),
+              SizedBox(height: 10), // Ruimte tussen velden
+              TextField(
+                controller: _passwordController,
+                decoration: InputDecoration(
+                  labelText: 'Wachtwoord',
+                  border: OutlineInputBorder(),
+                ),
+                obscureText: true, // Maakt tekst verborgen
+                autofillHints: [AutofillHints.password], // Autofill voor wachtwoord
               ),
-              obscureText: true, // Maakt tekst verborgen
-              autofillHints: [AutofillHints.password], // Zorg ervoor dat wachtwoord wordt herkend
-            ),
-            SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: _login,
-              child: Text('Login'),
-            ),
-            if (_errorMessage.isNotEmpty)
-              Text(
-                _errorMessage,
-                style: TextStyle(color: Colors.red),
+              SizedBox(height: 10),
+              ElevatedButton(
+                onPressed: _login,
+                child: Text('Login'),
               ),
-          ],
+              if (_errorMessage.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 10),
+                  child: Text(
+                    _errorMessage,
+                    style: TextStyle(color: Colors.red),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
