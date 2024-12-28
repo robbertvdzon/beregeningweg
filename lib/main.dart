@@ -23,11 +23,8 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
-
-
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Beregening Robbert\'s moestuin',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
@@ -37,7 +34,6 @@ class MyApp extends StatelessWidget {
     );
   }
 }
-
 
 class AuthStateChecker extends StatelessWidget {
   @override
@@ -50,7 +46,7 @@ class AuthStateChecker extends StatelessWidget {
           return Center(child: CircularProgressIndicator());
         } else if (snapshot.hasData) {
           // Gebruiker is ingelogd, ga naar MyHomePage
-          return MyHomePage(title: 'Robbert\'s tuinsproeiers');
+          return MyHomePage(title: 'Beregening Robbert\'s moestuin');
         } else {
           // Gebruiker is niet ingelogd, ga naar LoginPage
           return LoginPage();
@@ -79,7 +75,6 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-
   Future<void> saveData(String data) async {
     final _db = FirebaseFirestore.instance;
     String randomUuid = _uuid.v4();
@@ -103,60 +98,88 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  // void _logout() async{
-  //   setState(() {
-  //     try {
-  //       await FirebaseAuth.instance.signOut();
-  //       print("Gebruiker is uitgelogd.");
-  //     } catch (e) {
-  //       print("Error tijdens uitloggen: $e");
-  //     }
-  //   });
-  // }
-
   @override
+  // Widget build(BuildContext context) {
+  //   return MaterialApp(
+  //     home: Scaffold(
+  //       body: Container(
+  //         decoration: BoxDecoration(
+  //           image: DecorationImage(
+  //             image: AssetImage('assets/beregening.jpg'), // Vervang dit door je afbeelding
+  //             fit: BoxFit.cover, // Zorgt ervoor dat de afbeelding de volledige breedte bedekt
+  //           ),
+  //         ),
+  //         child: Center(
+  //           child: Text(
+  //             'Welkom!',
+  //             style: TextStyle(
+  //               fontSize: 32,
+  //               color: Colors.white,
+  //             ),
+  //           ),
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
+  //
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
-      appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
       body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            ElevatedButton(
-              onPressed: _decrementCounter,
-              child: Text('-2')
+        child: Container(
+          width: 1000,
+          // Stel een vaste breedte in
+          height: double.infinity,
+          // Vul de volledige hoogte
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            image: DecorationImage(
+                image: AssetImage('assets/beregening.png'),
+                // Jouw afbeeldingsbestand
+                fit: BoxFit.cover,
+                // Past de afbeelding aan zodat deze de hele achtergrond bedekt
+                alignment: Alignment.topCenter),
+          ),
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                ElevatedButton(onPressed: _decrementCounter, child: Text('-2')),
+                ElevatedButton(onPressed: _incrementCounter, child: Text('+2')),
+                ElevatedButton(
+                    onPressed: () async {
+                      await FirebaseAuth.instance.signOut();
+                      // Ga terug naar de loginpagina
+                      Navigator.of(context).pushReplacement(
+                        MaterialPageRoute(builder: (context) => LoginPage()),
+                      );
+                    },
+                    child: Text('logout!')),
+                StreamBuilder<DocumentSnapshot>(
+                  stream: FirebaseFirestore.instance
+                      .collection('bewatering')
+                      .doc('status') // Specificeer je document
+                      .snapshots(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return CircularProgressIndicator(); // Toon een laadindicator
+                    }
+                    if (!snapshot.hasData || !snapshot.data!.exists) {
+                      return Text('Document niet gevonden');
+                    }
+
+                    // Haal de data op uit het document
+                    Map<String, dynamic> data =
+                        snapshot.data!.data() as Map<String, dynamic>;
+
+                    // Toon de inhoud van een specifiek veld (bijv. 'status')
+                    return Text(
+                        'Status: ${data['status'] ?? 'Geen status'} ---Klok: ${data['klok'] ?? 'Geen klok'}');
+                  },
+                ),
+              ],
             ),
-            ElevatedButton(
-                onPressed: _incrementCounter,
-                child: Text('+2')
-            ),
-            ElevatedButton(
-                onPressed: () async {
-                  await FirebaseAuth.instance.signOut();
-                  // Ga terug naar de loginpagina
-                  Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(builder: (context) => LoginPage()),
-                  );
-                },
-                child: Text('logout')
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -177,13 +200,16 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> _login() async {
     try {
       // Login met Firebase
-      UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+      UserCredential userCredential =
+          await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
       // Als login succesvol is, ga naar de volgende pagina
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => MyHomePage(title: 'Robbert''s tuinsproeiers')),
+        MaterialPageRoute(
+            builder: (context) =>
+                MyHomePage(title: 'Robbert' 's tuinsproeiers')),
       );
     } catch (e) {
       // Toon foutbericht
@@ -212,7 +238,9 @@ class _LoginPageState extends State<LoginPage> {
                   border: OutlineInputBorder(),
                 ),
                 keyboardType: TextInputType.emailAddress,
-                autofillHints: [AutofillHints.username], // Autofill voor gebruikersnaam
+                autofillHints: [
+                  AutofillHints.username
+                ], // Autofill voor gebruikersnaam
               ),
               SizedBox(height: 10), // Ruimte tussen velden
               TextField(
@@ -222,7 +250,9 @@ class _LoginPageState extends State<LoginPage> {
                   border: OutlineInputBorder(),
                 ),
                 obscureText: true, // Maakt tekst verborgen
-                autofillHints: [AutofillHints.password], // Autofill voor wachtwoord
+                autofillHints: [
+                  AutofillHints.password
+                ], // Autofill voor wachtwoord
               ),
               SizedBox(height: 10),
               ElevatedButton(
