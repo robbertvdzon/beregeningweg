@@ -148,44 +148,46 @@ class _MyHomePageState extends State<MyHomePage> {
               // mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
                 SizedBox(height: 450),
-                StreamBuilder<DocumentSnapshot>(
-                  stream: FirebaseFirestore.instance
-                      .collection('bewatering')
-                      .doc('status') // Specificeer je document
-                      .snapshots(),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return CircularProgressIndicator(); // Toon een laadindicator
-                    }
-                    if (!snapshot.hasData || !snapshot.data!.exists) {
-                      return Text('Document niet gevonden');
-                    }
 
-                    // Haal de data op uit het document
-                    Map<String, dynamic> data =
-                    snapshot.data!.data() as Map<String, dynamic>;
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center, // Centreer de widgets horizontaal
+                  children: <Widget>[
+                    ElevatedButton(
+                      onPressed: _decrementCounter,
+                      child: Text('-5 minuten'),
+                    ),
+                    SizedBox(width: 10), // Voeg een beetje ruimte tussen de widgets
+                    StreamBuilder<DocumentSnapshot>(
+                      stream: FirebaseFirestore.instance
+                          .collection('bewatering')
+                          .doc('status') // Specificeer je document
+                          .snapshots(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return CircularProgressIndicator(); // Toon een laadindicator
+                        }
+                        if (!snapshot.hasData || !snapshot.data!.exists) {
+                          return Text('Document niet gevonden');
+                        }
 
-                    // Toon de inhoud van een specifiek veld (bijv. 'status')
-                    return  ElevatedButton(onPressed:_nothing,  child: Text('Timer: ${data['klok'] ?? 'Geen klok'}'));
+                        // Haal de data op uit het document
+                        Map<String, dynamic> data =
+                        snapshot.data!.data() as Map<String, dynamic>;
 
-                    return Text('Timer: ${data['klok'] ?? 'Geen klok'}');
-                        // 'Status: ${data['status'] ?? 'Geen status'} ---Klok: ${data['klok'] ?? 'Geen klok'}');
-                  },
+                        // Toon de inhoud van een specifiek veld (bijv. 'status')
+                        return ElevatedButton(
+                          onPressed: _nothing,
+                          child: Text('Timer: ${data['klok'] ?? 'Geen klok'}'),
+                        );
+                      },
+                    ),
+                    SizedBox(width: 10), // Voeg een beetje ruimte tussen de widgets
+                    ElevatedButton(
+                      onPressed: _incrementCounter,
+                      child: Text('+5 minuten'),
+                    ),
+                  ],
                 ),
-
-                ElevatedButton(onPressed: _decrementCounter, child: Text('-5 minuten')),
-                ElevatedButton(onPressed: _incrementCounter, child: Text('+5 minuten')),
-                // ElevatedButton(
-                //     onPressed: () async {
-                //       await FirebaseAuth.instance.signOut();
-                //       // Ga terug naar de loginpagina
-                //       Navigator.of(context).pushReplacement(
-                //         MaterialPageRoute(builder: (context) => LoginPage()),
-                //       );
-                //     },
-                //     child: Text('logout!')),
-
-
 
               ],
             ),
