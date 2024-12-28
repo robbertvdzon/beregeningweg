@@ -88,14 +88,17 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _incrementCounter() {
     setState(() {
-      saveData("2");
+      saveData("5");
     });
   }
 
   void _decrementCounter() {
     setState(() {
-      saveData("-2");
+      saveData("-5");
     });
+  }
+
+  void _nothing() {
   }
 
   @override
@@ -140,21 +143,11 @@ class _MyHomePageState extends State<MyHomePage> {
                 // Past de afbeelding aan zodat deze de hele achtergrond bedekt
                 alignment: Alignment.topCenter),
           ),
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+          child:
+            Column(
+              // mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
-                ElevatedButton(onPressed: _decrementCounter, child: Text('-2')),
-                ElevatedButton(onPressed: _incrementCounter, child: Text('+2')),
-                ElevatedButton(
-                    onPressed: () async {
-                      await FirebaseAuth.instance.signOut();
-                      // Ga terug naar de loginpagina
-                      Navigator.of(context).pushReplacement(
-                        MaterialPageRoute(builder: (context) => LoginPage()),
-                      );
-                    },
-                    child: Text('logout!')),
+                SizedBox(height: 450),
                 StreamBuilder<DocumentSnapshot>(
                   stream: FirebaseFirestore.instance
                       .collection('bewatering')
@@ -170,16 +163,33 @@ class _MyHomePageState extends State<MyHomePage> {
 
                     // Haal de data op uit het document
                     Map<String, dynamic> data =
-                        snapshot.data!.data() as Map<String, dynamic>;
+                    snapshot.data!.data() as Map<String, dynamic>;
 
                     // Toon de inhoud van een specifiek veld (bijv. 'status')
-                    return Text(
-                        'Status: ${data['status'] ?? 'Geen status'} ---Klok: ${data['klok'] ?? 'Geen klok'}');
+                    return  ElevatedButton(onPressed:_nothing,  child: Text('Timer: ${data['klok'] ?? 'Geen klok'}'));
+
+                    return Text('Timer: ${data['klok'] ?? 'Geen klok'}');
+                        // 'Status: ${data['status'] ?? 'Geen status'} ---Klok: ${data['klok'] ?? 'Geen klok'}');
                   },
                 ),
+
+                ElevatedButton(onPressed: _decrementCounter, child: Text('-5 minuten')),
+                ElevatedButton(onPressed: _incrementCounter, child: Text('+5 minuten')),
+                // ElevatedButton(
+                //     onPressed: () async {
+                //       await FirebaseAuth.instance.signOut();
+                //       // Ga terug naar de loginpagina
+                //       Navigator.of(context).pushReplacement(
+                //         MaterialPageRoute(builder: (context) => LoginPage()),
+                //       );
+                //     },
+                //     child: Text('logout!')),
+
+
+
               ],
             ),
-          ),
+
         ),
       ),
     );
