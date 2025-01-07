@@ -87,7 +87,6 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-
   void _startPeriodicCall() {
     _timer = Timer.periodic(Duration(seconds: 60), (timer) {
       if (_isPageVisible) {
