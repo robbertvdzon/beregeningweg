@@ -4,7 +4,8 @@ import 'firebase_options.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:uuid/uuid.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart';
+import 'dart:async';
+import 'dart:html' as html;
 
 String myData = "Test";
 var _uuid = Uuid();
@@ -63,6 +64,84 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  Timer? _timer;
+  bool _isPageVisible = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _startPeriodicCall();
+
+    // Luister naar veranderingen in tab-/venstervisibiliteit
+    html.document.onVisibilityChange.listen((event) {
+      setState(() {
+        _isPageVisible = html.document.visibilityState == "visible";
+      });
+
+      if (_isPageVisible) {
+        _makeRestCall();
+        _makeVisible();
+      } else {
+        _makeInvisible();
+      }
+    });
+  }
+
+
+  void _startPeriodicCall() {
+    _timer = Timer.periodic(Duration(seconds: 60), (timer) {
+      if (_isPageVisible) {
+        _makeRestCall();
+      }
+    });
+    _makeRestCall();
+    _makeVisible();
+  }
+
+  void _stopPeriodicCall() {
+    _timer?.cancel();
+    _makeInvisible();
+  }
+
+  Future<void> _makeRestCall() async {
+    final _db = FirebaseFirestore.instance;
+    DateTime now = DateTime.now();
+    String dateTimeString = now.toString();
+    final jsonKeyValue = <String, String>{'updaterequest': dateTimeString};
+    return _db
+        .collection('bewatering')
+        .doc('updatecommands')
+        .set(jsonKeyValue, SetOptions(merge: true))
+        .onError((e, _) => print("Error writing document: $e"));
+  }
+
+  Future<void> _makeVisible() async {
+    final _db = FirebaseFirestore.instance;
+    final jsonKeyValue = <String, String>{'visible': 'true'};
+    return _db
+        .collection('bewatering')
+        .doc('updatecommands')
+        .set(jsonKeyValue, SetOptions(merge: true))
+        .onError((e, _) => print("Error writing document: $e"));
+  }
+
+  Future<void> _makeInvisible() async {
+    final _db = FirebaseFirestore.instance;
+    final jsonKeyValue = <String, String>{'visible': 'false'};
+    return _db
+        .collection('bewatering')
+        .doc('updatecommands')
+        .set(jsonKeyValue, SetOptions(merge: true))
+        .onError((e, _) => print("Error writing document: $e"));
+  }
+
+
+  @override
+  void dispose() {
+    _stopPeriodicCall();
+    super.dispose();
+  }
+
   Future<void> saveData(String data) async {
     final _db = FirebaseFirestore.instance;
     String randomUuid = _uuid.v4();
@@ -176,7 +255,7 @@ class _LoginPageState extends State<LoginPage> {
     try {
       // Login met Firebase
       UserCredential userCredential =
-          await FirebaseAuth.instance.signInWithEmailAndPassword(
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
