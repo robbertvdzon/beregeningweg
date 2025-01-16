@@ -5,6 +5,112 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:uuid/uuid.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:html' as html;
+import 'package:json_annotation/json_annotation.dart';
+import 'dart:convert';
+import 'dart:async';
+
+part 'main.g.dart';
+
+
+
+// Top-level ViewModel class
+@JsonSerializable(explicitToJson: true)
+class ViewModel {
+  final String ipAddress;
+  final PumpStatus pumpStatus;
+  final IrrigationArea currentIrrigationArea;
+  final Timestamp pumpingEndTime;
+  final List<EnrichedSchedule> schedules;
+  final String nextSchedule;
+
+  ViewModel({
+    required this.ipAddress,
+    required this.pumpStatus,
+    required this.currentIrrigationArea,
+    required this.pumpingEndTime,
+    required this.schedules,
+    required this.nextSchedule,
+  });
+
+  // Factory method for JSON deserialization
+  factory ViewModel.fromJson(Map<String, dynamic> json) => _$ViewModelFromJson(json);
+
+  // Method for JSON serialization
+  Map<String, dynamic> toJson() => _$ViewModelToJson(this);
+}
+
+// Enum for PumpStatus
+enum PumpStatus { OPEN, CLOSE }
+
+// Enum for IrrigationArea
+enum IrrigationArea { MOESTUIN, GAZON }
+
+// Timestamp class
+@JsonSerializable()
+class Timestamp {
+  final int year;
+  final int month;
+  final int day;
+  final int hour;
+  final int minute;
+  final int second;
+
+  Timestamp({
+    required this.year,
+    required this.month,
+    required this.day,
+    required this.hour,
+    required this.minute,
+    required this.second,
+  });
+
+  factory Timestamp.fromJson(Map<String, dynamic> json) => _$TimestampFromJson(json);
+
+  Map<String, dynamic> toJson() => _$TimestampToJson(this);
+}
+
+// EnrichedSchedule class
+@JsonSerializable(explicitToJson: true)
+class EnrichedSchedule {
+  final Schedule schedule;
+  final Timestamp? nextRun;
+
+  EnrichedSchedule({
+    required this.schedule,
+    this.nextRun,
+  });
+
+  factory EnrichedSchedule.fromJson(Map<String, dynamic> json) => _$EnrichedScheduleFromJson(json);
+
+  Map<String, dynamic> toJson() => _$EnrichedScheduleToJson(this);
+}
+
+// Schedule class
+@JsonSerializable(explicitToJson: true)
+class Schedule {
+  final String id;
+  final Timestamp startSchedule;
+  final Timestamp? endSchedule;
+  final int duration;
+  final int daysInterval;
+  final IrrigationArea erea;
+  final bool enabled;
+
+  Schedule({
+    required this.id,
+    required this.startSchedule,
+    this.endSchedule,
+    required this.duration,
+    required this.daysInterval,
+    required this.erea,
+    required this.enabled,
+  });
+
+  factory Schedule.fromJson(Map<String, dynamic> json) => _$ScheduleFromJson(json);
+
+  Map<String, dynamic> toJson() => _$ScheduleToJson(this);
+}
+
 
 String myData = "Test";
 var _uuid = Uuid();
@@ -66,10 +172,37 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
 
+  late Timer _timer;
+  ViewModel? viewModel = null;
+  String _timeLeft = "";
+
   @override
   void initState() {
     super.initState();
     _requestBackendUpdates();
+
+    _timer = Timer.periodic(Duration(seconds: 1), (timer) {
+      setState(() {
+        String timeLeft = "Unknown";
+        final viewModelCopy = viewModel;
+        if (viewModelCopy!=null) {
+          if (viewModelCopy.pumpStatus == PumpStatus.CLOSE) timeLeft = "Closed";
+          if (viewModelCopy.pumpStatus == PumpStatus.OPEN) {
+            timeLeft = calculateTimeDifference(
+              viewModelCopy.pumpingEndTime.year,
+              viewModelCopy.pumpingEndTime.month,
+              viewModelCopy.pumpingEndTime.day,
+              viewModelCopy.pumpingEndTime.hour,
+              viewModelCopy.pumpingEndTime.minute,
+              viewModelCopy.pumpingEndTime.second,
+            );
+          }
+        }
+        _timeLeft = timeLeft;
+
+        // _currentTime = DateTime.now(); // Werk de tijd bij
+      });
+    });
 
     // Luister naar veranderingen in tab-/venstervisibiliteit
     html.document.onVisibilityChange.listen((event) {
@@ -77,6 +210,13 @@ class _MyHomePageState extends State<MyHomePage> {
         _requestBackendUpdates();
       }
     });
+  }
+
+  @override
+  void dispose() {
+    // Zorg ervoor dat de timer wordt geannuleerd om resource-lekken te voorkomen
+    _timer.cancel();
+    super.dispose();
   }
 
   void _requestBackendUpdates() {
@@ -150,11 +290,14 @@ class _MyHomePageState extends State<MyHomePage> {
                       Map<String, dynamic> data =
                           snapshot.data!.data() as Map<String, dynamic>;
 
-                      String jsonStatus = data['viewModel'].toString();
+                      String jsonString = data['viewModel'].toString();
+                      final jsonMap = json.decode(jsonString) as Map<String, dynamic>;
+                      viewModel = ViewModel.fromJson(jsonMap);
+
                       // Toon de inhoud van een specifiek veld (bijv. 'status')
                       return ElevatedButton(
                         onPressed: _requestBackendUpdates,
-                        child: Text('Timer: ${jsonStatus ?? 'Geen klok'}'),
+                        child: Text('Timer: ${_timeLeft ?? 'Geen klok'}'),
                       );
                     },
                   ),
@@ -175,6 +318,30 @@ class _MyHomePageState extends State<MyHomePage> {
         ),
       ),
     );
+  }
+
+  String calculateTimeDifference(int year, int month, int day, int hour, int minute, int second) {
+    // Maak een DateTime object van de gegeven waarden
+    final targetDateTime = DateTime(year, month, day, hour, minute, second);
+
+    // Huidige tijd
+    final now = DateTime.now();
+
+    // Bereken het verschil
+    final duration = targetDateTime.difference(now);
+
+    // Controleer of de tijd al verstreken is
+    if (duration.isNegative) {
+      return "00:00:00"; // Als de tijd in het verleden ligt
+    }
+
+    // Haal uren, minuten en seconden uit het verschil
+    final hours = duration.inHours;
+    final minutes = duration.inMinutes % 60;
+    final seconds = duration.inSeconds % 60;
+
+    // Formatteer het resultaat naar hh:mm:ss
+    return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
   }
 }
 
