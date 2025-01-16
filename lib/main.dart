@@ -199,8 +199,6 @@ class _MyHomePageState extends State<MyHomePage> {
           }
         }
         _timeLeft = timeLeft;
-
-        // _currentTime = DateTime.now(); // Werk de tijd bij
       });
     });
 
