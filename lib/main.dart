@@ -4,7 +4,6 @@ import 'firebase_options.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:uuid/uuid.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'dart:async';
 import 'dart:html' as html;
 
 String myData = "Test";
@@ -58,114 +57,45 @@ class AuthStateChecker extends StatelessWidget {
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
+
   final String title;
+
   @override
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  Timer? _timer;
-  bool _isPageVisible = true;
 
   @override
   void initState() {
     super.initState();
-    _startPeriodicCall();
+    _requestBackendUpdates();
 
     // Luister naar veranderingen in tab-/venstervisibiliteit
     html.document.onVisibilityChange.listen((event) {
-      setState(() {
-        _isPageVisible = html.document.visibilityState == "visible";
-      });
-
-      if (_isPageVisible) {
-        _makeRestCall();
-        _makeVisible();
-      } else {
-        _makeInvisible();
+      if (html.document.visibilityState == "visible") {
+        _requestBackendUpdates();
       }
     });
   }
 
-  void _startPeriodicCall() {
-    _timer = Timer.periodic(Duration(seconds: 60), (timer) {
-      if (_isPageVisible) {
-        _makeRestCall();
-      }
-    });
-    _makeRestCall();
-    _makeVisible();
+  void _requestBackendUpdates() {
+    _addCommand("REQUEST_UPDATE : " + DateTime.now().toString());
   }
 
-  void _stopPeriodicCall() {
-    _timer?.cancel();
-    _makeInvisible();
-  }
-
-  Future<void> _makeRestCall() async {
-    final _db = FirebaseFirestore.instance;
-    DateTime now = DateTime.now();
-    String dateTimeString = now.toString();
-    final jsonKeyValue = <String, String>{'updaterequest': dateTimeString};
-    return _db
-        .collection('bewatering')
-        .doc('updatecommands')
-        .set(jsonKeyValue, SetOptions(merge: true))
-        .onError((e, _) => print("Error writing document: $e"));
-  }
-
-  Future<void> _makeVisible() async {
-    final _db = FirebaseFirestore.instance;
-    final jsonKeyValue = <String, String>{'visible': 'true'};
-    return _db
-        .collection('bewatering')
-        .doc('updatecommands')
-        .set(jsonKeyValue, SetOptions(merge: true))
-        .onError((e, _) => print("Error writing document: $e"));
-  }
-
-  Future<void> _makeInvisible() async {
-    final _db = FirebaseFirestore.instance;
-    final jsonKeyValue = <String, String>{'visible': 'false'};
-    return _db
-        .collection('bewatering')
-        .doc('updatecommands')
-        .set(jsonKeyValue, SetOptions(merge: true))
-        .onError((e, _) => print("Error writing document: $e"));
-  }
-
-
-  @override
-  void dispose() {
-    _stopPeriodicCall();
-    super.dispose();
-  }
-
-  Future<void> saveData(String data) async {
-    final _db = FirebaseFirestore.instance;
-    String randomUuid = _uuid.v4();
-    final jsonKeyValue = <String, String>{randomUuid: data};
-    return _db
-        .collection('bewatering')
-        .doc('commands')
-        .set(jsonKeyValue, SetOptions(merge: true))
-        .onError((e, _) => print("Error writing document: $e"));
-  }
-
-  void _incrementCounter() {
+  void _addCommand(String data) async {
     setState(() {
-      saveData("5");
+      final _db = FirebaseFirestore.instance;
+      final jsonKeyValue = <String, String>{"command": data};
+      _db
+          .collection('bewatering')
+          .doc('commands')
+          .set(jsonKeyValue, SetOptions(merge: true))
+          .onError((e, _) => print("Error writing document: $e"));
     });
   }
 
-  void _decrementCounter() {
-    setState(() {
-      saveData("-5");
-    });
-  }
-
-  void _nothing() {
-  }
+  void _nothing() {}
 
   @override
   Widget build(BuildContext context) {
@@ -185,54 +115,63 @@ class _MyHomePageState extends State<MyHomePage> {
                 // Past de afbeelding aan zodat deze de hele achtergrond bedekt
                 alignment: Alignment.topCenter),
           ),
-          child:
-            Column(
-              // mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                SizedBox(height: 450),
+          child: Column(
+            // mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              SizedBox(height: 450),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                // Centreer de widgets horizontaal
+                children: <Widget>[
+                  ElevatedButton(
+                    onPressed: () => _addCommand("UPDATE_IRRIGATION_TIME,-5"),
+                    child: Text('-5'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => _addCommand("UPDATE_IRRIGATION_TIME,-30"),
+                    child: Text('-30'),
+                  ),
+                  SizedBox(width: 10),
+                  // Voeg een beetje ruimte tussen de widgets
+                  StreamBuilder<DocumentSnapshot>(
+                    stream: FirebaseFirestore.instance
+                        .collection('bewatering')
+                        .doc('status')
+                        .snapshots(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return CircularProgressIndicator(); // Toon een laadindicator
+                      }
+                      if (!snapshot.hasData || !snapshot.data!.exists) {
+                        return Text('Document niet gevonden');
+                      }
 
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center, // Centreer de widgets horizontaal
-                  children: <Widget>[
-                    ElevatedButton(
-                      onPressed: _decrementCounter,
-                      child: Text('-5 minuten'),
-                    ),
-                    SizedBox(width: 10), // Voeg een beetje ruimte tussen de widgets
-                    StreamBuilder<DocumentSnapshot>(
-                      stream: FirebaseFirestore.instance
-                          .collection('bewatering')
-                          .doc('status') // Specificeer je document
-                          .snapshots(),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
-                          return CircularProgressIndicator(); // Toon een laadindicator
-                        }
-                        if (!snapshot.hasData || !snapshot.data!.exists) {
-                          return Text('Document niet gevonden');
-                        }
+                      // Haal de data op uit het document
+                      Map<String, dynamic> data =
+                          snapshot.data!.data() as Map<String, dynamic>;
 
-                        // Haal de data op uit het document
-                        Map<String, dynamic> data =
-                        snapshot.data!.data() as Map<String, dynamic>;
-
-                        // Toon de inhoud van een specifiek veld (bijv. 'status')
-                        return ElevatedButton(
-                          onPressed: _nothing,
-                          child: Text('Timer: ${data['klok'] ?? 'Geen klok'}'),
-                        );
-                      },
-                    ),
-                    SizedBox(width: 10), // Voeg een beetje ruimte tussen de widgets
-                    ElevatedButton(
-                      onPressed: _incrementCounter,
-                      child: Text('+5 minuten'),
-                    ),
-                  ],
-                ),
-
-              ],
-            ),
+                      String jsonStatus = data['viewModel'].toString();
+                      // Toon de inhoud van een specifiek veld (bijv. 'status')
+                      return ElevatedButton(
+                        onPressed: _requestBackendUpdates,
+                        child: Text('Timer: ${jsonStatus ?? 'Geen klok'}'),
+                      );
+                    },
+                  ),
+                  SizedBox(width: 10),
+                  // Voeg een beetje ruimte tussen de widgets
+                  ElevatedButton(
+                    onPressed: () => _addCommand("UPDATE_IRRIGATION_TIME,5"),
+                    child: Text('+5'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => _addCommand("UPDATE_IRRIGATION_TIME,30"),
+                    child: Text('+30'),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -254,7 +193,7 @@ class _LoginPageState extends State<LoginPage> {
     try {
       // Login met Firebase
       UserCredential userCredential =
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
+          await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
