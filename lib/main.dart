@@ -280,7 +280,40 @@ class _MyHomePageState extends State<MyHomePage> {
           child: Column(
             // mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-              SizedBox(height: 450),
+              SizedBox(height: 400),
+
+              StreamBuilder<DocumentSnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('bewatering')
+                    .doc('status')
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return CircularProgressIndicator(); // Toon een laadindicator
+                  }
+                  if (!snapshot.hasData || !snapshot.data!.exists) {
+                    return Text('Document niet gevonden');
+                  }
+
+                  // Haal de data op uit het document
+                  Map<String, dynamic> data =
+                  snapshot.data!.data() as Map<String, dynamic>;
+
+                  String jsonString = data['viewModel'].toString();
+                  final jsonMap = json.decode(jsonString) as Map<String, dynamic>;
+                  viewModel = ViewModel.fromJson(jsonMap);
+                  String lastupdate = data['lastupdate'].toString();
+
+                  // Toon de inhoud van een specifiek veld (bijv. 'status')
+                  return ElevatedButton(
+                    onPressed: _requestBackendUpdates,
+                    child: Text('Laatste status: ${lastupdate ?? '-'}'),
+                  );
+                },
+              ),
+              SizedBox(height: 10),
+
+
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 // Centreer de widgets horizontaal
@@ -295,38 +328,6 @@ class _MyHomePageState extends State<MyHomePage> {
                   ),
                   SizedBox(width: 10),
                   // Voeg een beetje ruimte tussen de widgets
-                  StreamBuilder<DocumentSnapshot>(
-                    stream: FirebaseFirestore.instance
-                        .collection('bewatering')
-                        .doc('status')
-                        .snapshots(),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return CircularProgressIndicator(); // Toon een laadindicator
-                      }
-                      if (!snapshot.hasData || !snapshot.data!.exists) {
-                        return Text('Document niet gevonden');
-                      }
-
-                      // Haal de data op uit het document
-                      Map<String, dynamic> data =
-                          snapshot.data!.data() as Map<String, dynamic>;
-
-                      String jsonString = data['viewModel'].toString();
-                      final jsonMap = json.decode(jsonString) as Map<String, dynamic>;
-                      viewModel = ViewModel.fromJson(jsonMap);
-                      String lastupdate = data['lastupdate'].toString();
-
-                      // Toon de inhoud van een specifiek veld (bijv. 'status')
-                      return ElevatedButton(
-                        onPressed: _requestBackendUpdates,
-                        child: Text('Updated: ${lastupdate ?? '-'}'),
-                      );
-                    },
-                  ),
-
-
-
 
                 StreamBuilder<String>(
                   stream: _timeStream,
@@ -335,10 +336,9 @@ class _MyHomePageState extends State<MyHomePage> {
                       return CircularProgressIndicator();
                     }
                     final time = snapshot.data!;
-                    return
-                      Text(
-                      "Tijd: ${time}",
-                      style: TextStyle(fontSize: 24),
+                    return ElevatedButton(
+                      onPressed: _nothing,
+                      child: Text('Timer: ${time ?? 'Geen klok'}'),
                     );
                   },
                 ),
