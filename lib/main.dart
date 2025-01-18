@@ -338,7 +338,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     final time = snapshot.data!;
                     return ElevatedButton(
                       onPressed: _nothing,
-                      child: Text('Timer: ${time ?? 'Geen klok'}'),
+                      child: Text('${time}'),
                     );
                   },
                 ),
