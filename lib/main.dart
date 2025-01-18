@@ -172,17 +172,12 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
 
-  late Timer _timer;
+  // late Timer _timer;
   ViewModel? viewModel = null;
-  String _timeLeft = "";
+  // String _timeLeft = "";
+  late Stream<String> _timeStream;
 
-  @override
-  void initState() {
-    super.initState();
-    _requestBackendUpdates();
-
-    _timer = Timer.periodic(Duration(seconds: 1), (timer) {
-      setState(() {
+  String getTimeLeft(){
         String timeLeft = "Unknown";
         final viewModelCopy = viewModel;
         if (viewModelCopy!=null) {
@@ -198,9 +193,38 @@ class _MyHomePageState extends State<MyHomePage> {
             );
           }
         }
-        _timeLeft = timeLeft;
-      });
-    });
+        return timeLeft;
+
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _timeStream = Stream.periodic(Duration(seconds: 1), (_) =>
+        getTimeLeft()
+    );
+    _requestBackendUpdates();
+    //
+    // _timer = Timer.periodic(Duration(seconds: 1), (timer) {
+    //   setState(() {
+    //     String timeLeft = "Unknown";
+    //     final viewModelCopy = viewModel;
+    //     if (viewModelCopy!=null) {
+    //       if (viewModelCopy.pumpStatus == PumpStatus.CLOSE) timeLeft = "Closed";
+    //       if (viewModelCopy.pumpStatus == PumpStatus.OPEN) {
+    //         timeLeft = calculateTimeDifference(
+    //           viewModelCopy.pumpingEndTime.year,
+    //           viewModelCopy.pumpingEndTime.month,
+    //           viewModelCopy.pumpingEndTime.day,
+    //           viewModelCopy.pumpingEndTime.hour,
+    //           viewModelCopy.pumpingEndTime.minute,
+    //           viewModelCopy.pumpingEndTime.second,
+    //         );
+    //       }
+    //     }
+    //     _timeLeft = timeLeft;
+    //   });
+    // });
 
     // Luister naar veranderingen in tab-/venstervisibiliteit
     html.document.onVisibilityChange.listen((event) {
@@ -213,12 +237,12 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void dispose() {
     // Zorg ervoor dat de timer wordt geannuleerd om resource-lekken te voorkomen
-    _timer.cancel();
+    // _timer.cancel();
     super.dispose();
   }
 
   void _requestBackendUpdates() {
-    _addCommand("REQUEST_UPDATE : " + DateTime.now().toString());
+    _addCommand("UPDATE_STATE");
   }
 
   void _addCommand(String data) async {
@@ -291,14 +315,37 @@ class _MyHomePageState extends State<MyHomePage> {
                       String jsonString = data['viewModel'].toString();
                       final jsonMap = json.decode(jsonString) as Map<String, dynamic>;
                       viewModel = ViewModel.fromJson(jsonMap);
+                      String lastupdate = data['lastupdate'].toString();
 
                       // Toon de inhoud van een specifiek veld (bijv. 'status')
                       return ElevatedButton(
                         onPressed: _requestBackendUpdates,
-                        child: Text('Timer: ${_timeLeft ?? 'Geen klok'}'),
+                        child: Text('Updated: ${lastupdate ?? '-'}'),
                       );
                     },
                   ),
+
+
+
+
+                StreamBuilder<String>(
+                  stream: _timeStream,
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) {
+                      return CircularProgressIndicator();
+                    }
+                    final time = snapshot.data!;
+                    return
+                      Text(
+                      "Tijd: ${time}",
+                      style: TextStyle(fontSize: 24),
+                    );
+                  },
+                ),
+
+
+
+
                   SizedBox(width: 10),
                   // Voeg een beetje ruimte tussen de widgets
                   ElevatedButton(
