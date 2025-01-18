@@ -343,18 +343,15 @@ class _MyHomePageState extends State<MyHomePage> {
                   },
                 ),
 
-
-
-
+                  ElevatedButton(
+                    onPressed: () => _addCommand("UPDATE_IRRIGATION_TIME,30"),
+                    child: Text('+30'),
+                  ),
                   SizedBox(width: 10),
                   // Voeg een beetje ruimte tussen de widgets
                   ElevatedButton(
                     onPressed: () => _addCommand("UPDATE_IRRIGATION_TIME,5"),
                     child: Text('+5'),
-                  ),
-                  ElevatedButton(
-                    onPressed: () => _addCommand("UPDATE_IRRIGATION_TIME,30"),
-                    child: Text('+30'),
                   ),
                 ],
               ),
